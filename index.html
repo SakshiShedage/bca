@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html ng-app="studentApp">
+<head>
+    <title>Student Application</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+</head>
+
+<body ng-controller="studentController">
+
+    <h2>Student Application</h2>
+
+    <h3>Add / Update Student</h3>
+
+    <form ng-submit="saveStudent()">
+        <label>Name:</label>
+        <input type="text" ng-model="student.name" required>
+        <br><br>
+
+        <label>Age:</label>
+        <input type="number" ng-model="student.age" required>
+        <br><br>
+
+        <label>Course:</label>
+        <input type="text" ng-model="student.course" required>
+        <br><br>
+
+        <button type="submit">
+            {{ student._id ? 'Update Student' : 'Add Student' }}
+        </button>
+        <button type="button" ng-click="clearForm()">Clear</button>
+    </form>
+
+    <p>{{ message }}</p>
+
+    <h3>Student List</h3>
+    <button ng-click="getStudents()">Refresh List</button>
+
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Name</th>
+            <th>Age</th>
+            <th>Course</th>
+            <th>Actions</th>
+        </tr>
+
+        <tr ng-repeat="s in students">
+            <td>{{ s.name }}</td>
+            <td>{{ s.age }}</td>
+            <td>{{ s.course }}</td>
+            <td>
+                <button ng-click="editStudent(s)">Edit</button>
+                <button ng-click="deleteStudent(s._id)">Delete</button>
+            </td>
+        </tr>
+    </table>
+
+<script>
+var app = angular.module("studentApp", []);
+
+app.controller("studentController", function($scope, $http) {
+
+    var api = "http://localhost:3000/students";
+
+    $scope.students = [];
+    $scope.student = {};
+    $scope.message = "";
+
+    $scope.getStudents = function() {
+        $http.get(api).then(function(response) {
+            $scope.students = response.data;
+        }, function() {
+            $scope.message = "Unable to load students.";
+        });
+    };
+
+    $scope.saveStudent = function() {
+        var data = {
+            name: $scope.student.name,
+            age: Number($scope.student.age),
+            course: $scope.student.course
+        };
+
+        if ($scope.student._id) {
+            $http.put(api + "/" + $scope.student._id, data)
+                .then(function() {
+                    $scope.message = "Student updated successfully!";
+                    $scope.clearForm();
+                    $scope.getStudents();
+                }, function() {
+                    $scope.message = "Unable to update student.";
+                });
+        } else {
+            $http.post(api, data)
+                .then(function() {
+                    $scope.message = "Student added successfully!";
+                    $scope.clearForm();
+                    $scope.getStudents();
+                }, function() {
+                    $scope.message = "Unable to add student.";
+                });
+        }
+    };
+
+    $scope.editStudent = function(s) {
+        $scope.student = {
+            _id: s._id,
+            name: s.name,
+            age: s.age,
+            course: s.course
+        };
+        $scope.message = "Edit the details and click Update Student.";
+    };
+
+    $scope.deleteStudent = function(id) {
+        if (confirm("Do you want to delete this student?")) {
+            $http.delete(api + "/" + id).then(function() {
+                $scope.message = "Student deleted successfully!";
+                $scope.getStudents();
+            }, function() {
+                $scope.message = "Unable to delete student.";
+            });
+        }
+    };
+
+    $scope.clearForm = function() {
+        $scope.student = {};
+    };
+
+    $scope.getStudents();
+});
+</script>
+
+</body>
+</html>
